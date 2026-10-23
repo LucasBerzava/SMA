@@ -1,0 +1,26 @@
+# Gradle generated files
+.gradle/
+**/build/
+
+# Local Android SDK configuration
+local.properties
+
+# Android Studio generated settings
+.idea/
+*.iml
+
+# Compiled applications
+*.apk
+*.aab
+
+# Logs
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Sensitive files
+*.jks
+*.keystore
+keystore.properties
