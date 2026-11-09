@@ -1,45 +1,71 @@
-# AdShield — prototip Android pentru proiectul SMA
+# AdShield 1.0 — blocker de reclame pentru Android
 
-Aplicație demonstrativă Kotlin/Jetpack Compose care filtrează **cereri DNS IPv4 UDP** printr-un VPN local (`VpnService`). Nu este un adblocker universal.
+Blochează reclamele și trackerele din **aplicații, jocuri și browsere** pe tot telefonul, fără root,
+printr-un VPN local care filtrează doar DNS-ul. Restul traficului nu trece prin aplicație, deci
+viteza și bateria nu sunt afectate.
 
-## Deschidere
+## Cum funcționează
 
-1. Instalează Android Studio cu JDK 17 și Android SDK 35.
-2. Deschide directorul `AdShield` ca proiect Gradle.
-3. Lasă Android Studio să sincronizeze dependențele (necesită internet).
-4. Rulează pe un telefon Android 8+; testează pe un dispozitiv propriu.
-5. Apasă PORNEȘTE și aprobă permisiunea VPN oferită de Android.
-6. Verifică statisticile și adaugă domenii în lista personalizată.
+1. Aplicația pornește un `VpnService` care rutează **doar** adresele serverului DNS virtual
+   (`10.111.0.1` și `fd00:a5a5::1`). Android trimite acolo toate cererile DNS ale aplicațiilor.
+2. Fiecare domeniu cerut este comparat cu ~200.000–400.000 de domenii de reclame/trackere
+   (căutare binară pe hash-uri de 64 biți: ~0,1 µs/căutare, ~8 octeți/domeniu în RAM).
+3. Domeniile blocate primesc `0.0.0.0` / `::` (sau NXDOMAIN); celelalte sunt rezolvate prin
+   **DNS criptat (DoH)** la serverul ales (implicit AdGuard DNS, care filtrează și el reclame),
+   cu revenire automată pe UDP dacă DoH nu merge.
 
-**Notă:** Pachetul nu include Gradle Wrapper sau APK precompilat; în acest mediu nu există Android SDK/Gradle pentru compilare și testare. Dacă Android Studio nu poate importa fără wrapper, creează un proiect Android gol cu aceeași versiune Gradle sau generează wrapper cu Gradle 8.9 (`gradle wrapper --gradle-version 8.9`).
+## Funcții
 
-## Ce face
+- **Liste de blocare** alese de utilizator: StevenBlack (inclusă, merge offline), HaGeZi Light/Pro/Pro++,
+  OISD Big, AdGuard DNS filter, 1Hosts Lite, Threat Intelligence, DoH bypass, Gambling.
+  Formate acceptate: hosts, domenii simple, wildcard (`*.x.com`), Adblock (`||x.com^`, `@@||x.com^`).
+  Actualizare automată la 3 zile (cu ETag / If-Modified-Since) și validare înainte de înlocuire.
+- **Jurnal live**: fiecare cerere DNS, cu aplicația care a făcut-o (Android 10+). Atingi un domeniu →
+  îl blochezi/permiți (sau tot domeniul-părinte).
+- **Excluderea aplicațiilor** (ex. jocuri care cer reclame pentru recompense, aplicații bancare).
+- **Anti-ocolire**: blochează DoH-ul propriu al browserelor (canary Firefox, endpoint-uri DoH publice).
+- **IPv4 + IPv6**, răspunsuri SERVFAIL rapide în loc de timeout, răspunsuri trunchiate corect.
+- Statistici (sesiune + total), top aplicații și top domenii blocate.
+- Pornire la boot, suport „VPN permanent activ”, buton în setările rapide, notificare cu buton Oprește.
+- Avertisment dacă „DNS privat” (strict) e activ, deoarece ocolește filtrul.
 
-- Setează DNS-ul Android al VPN-ului la `10.111.0.1` și rutează **numai această adresă** în interfața VPN.
-- Citește interogări DNS IPv4/UDP, compară domeniul cu lista inclusă și regulile utilizatorului.
-- Pentru domeniile blocate răspunde `NXDOMAIN`; pentru celelalte trimite cererea către `1.1.1.1:53` printr-un socket protejat împotriva buclei VPN.
-- Stochează local contori și domeniul blocat cel mai recent.
+## Ce nu poate bloca (limită a oricărui blocker DNS)
 
-## Limitări importante
+- **Reclamele YouTube** și cele din Facebook/Instagram/TikTok: vin de pe aceleași domenii ca
+  videoclipurile/postările. Blocarea lor ar opri și conținutul. Alternative: client YouTube fără
+  reclame (ReVanced), Firefox + uBlock Origin, Brave.
+- Spațiul gol din pagini după blocare (necesită blocker cosmetic în browser).
+- Aplicațiile care folosesc DNS criptat propriu, necunoscut listelor (rar).
 
-- DNS prin TCP, DNS-over-HTTPS, Private DNS, IPv6, cereri fragmentate și formate DNS speciale nu sunt suportate; unele aplicații vor ocoli filtrul sau pot avea probleme de rezoluție. În special, dezactivează Private DNS în setările Android doar pentru testele în care este necesar.
-- Unele rețele blochează DNS UDP extern; cererile permise pot eșua. DNS-ul upstream este fix `1.1.1.1`.
-- Nu gestionează complet reconectările, cache DNS, jurnalizare complexă sau repornirea automată.
-- Statistici simple, nu jurnal complet. Lista încorporată este deliberat scurtă; pentru filtrare serioasă trebuie un mecanism de actualizare și validare a listelor.
-- Nu este compilat sau testat pe un dispozitiv în mediul de generare. Este un **punct de pornire funcțional la nivel de implementare**, nu o aplicație certificată ca stabilă.
-- Nu include interceptare HTTPS, inspecție de conținut sau bypass al restricțiilor platformelor.
+## Compilare și rulare
 
-## Pași recomandați pentru o versiune avansată
+1. Android Studio (Ladybug sau mai nou), Android SDK 35.
+2. *File › Open* → directorul `AdShield`. Sincronizarea Gradle descarcă dependențele.
+3. Rulează pe telefon (Android 8+). Apasă **PORNEȘTE** și aprobă cererea VPN.
+4. În tab-ul **Filtre** apasă „Actualizează acum” prima dată (sau „Descarcă acum” din Acasă).
+5. Pentru un APK: *Build › Build APK(s)*; varianta `release` e minificată și semnată cu cheia de debug.
 
-1. Înlocuiește motorul demonstrativ cu un motor VPN/DNS matur, licențiat corespunzător.
-2. Suportă DNS IPv6, TCP, rezolvarea prin upstream configurabil și situațiile cu Private DNS.
-3. Adaugă actualizarea sigură a listelor, excepții per aplicație, teste automate și telemetrie locală transparentă.
-4. Evaluează comportamentul în rețele diferite și pe Android 12–15.
+Teste unitare (parser DNS, liste, potrivire domenii): `./gradlew test`.
+
+Testare rapidă: deschide un joc gratuit sau https://d3ward.github.io/toolz/adblock și urmărește
+tab-ul **Jurnal**. Loguri: `adb logcat -s AdShield AdShield.Lists`.
 
 ## Structură
 
-- `MainActivity.kt`: interfața, setările și statisticile.
-- `DnsVpnService.kt`: VPN local, interogări DNS și răspunsuri.
-- `PacketDns.kt`: parser minimal IPv4/UDP/DNS și construire pachete.
-- `FilterStore.kt`: reguli locale și excepții.
-- `assets/blocklist.txt`: lista demonstrativă de domenii.
+| Fișier | Rol |
+|---|---|
+| `core/PacketDns.kt` | Parsare IPv4/IPv6/UDP/DNS, construire răspunsuri și pachete (fără dependențe Android) |
+| `core/DomainSet.kt` | Mulțime compactă de domenii (hash 64 biți, sortat), potrivire pe subdomenii |
+| `core/ListParser.kt` | Citire liste hosts / domenii / wildcard / Adblock |
+| `data/FilterEngine.kt` | Decizia de blocare; priorități: excepțiile tale > blocările tale > excepții liste > liste |
+| `data/Blocklists.kt` | Catalogul de liste, descărcare, validare, actualizare automată |
+| `data/Upstreams.kt` | DoH (RFC 8484), UDP, fallback cu „circuit breaker” |
+| `data/Settings.kt`, `data/Stats.kt` | Setări; contori + jurnal în memorie |
+| `vpn/DnsVpnService.kt` | VPN-ul: interfața tun, `poll()`, thread-pool, notificare |
+| `vpn/BootReceiver.kt`, `vpn/ToggleTileService.kt` | Pornire la boot, buton în setările rapide |
+| `ui/*` | Interfața Compose: Acasă, Jurnal, Filtre, Aplicații, Setări |
+
+## Licențe liste
+
+StevenBlack/hosts (MIT) este inclusă în APK. Celelalte liste (HaGeZi — GPL-3.0, OISD, AdGuard — GPL-3.0,
+1Hosts — MPL-2.0) sunt descărcate de pe sursele oficiale la cererea utilizatorului, nu sunt redistribuite.

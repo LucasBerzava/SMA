@@ -1,7 +1,0 @@
-# Exemplu de listă DNS. Poți adăuga domenii, unul pe linie.
-doubleclick.net
-googlesyndication.com
-googleadservices.com
-adnxs.com
-scorecardresearch.com
-adsrvr.org

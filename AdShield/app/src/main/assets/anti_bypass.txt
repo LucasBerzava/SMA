@@ -1,0 +1,37 @@
+# Domenii prin care aplicațiile ar putea ocoli filtrul DNS (DNS-over-HTTPS hardcodat).
+# Firefox: domeniul "canary" dezactivează automat DoH-ul browserului.
+use-application-dns.net
+# Apple iCloud Private Relay (tot un canary)
+mask.icloud.com
+mask-h2.icloud.com
+# Endpoint-uri DoH publice frecvente
+dns.google
+dns.google.com
+cloudflare-dns.com
+mozilla.cloudflare-dns.com
+chrome.cloudflare-dns.com
+one.one.one.one
+1dot1dot1dot1.cloudflare-dns.com
+dns.quad9.net
+dns9.quad9.net
+dns10.quad9.net
+dns11.quad9.net
+doh.opendns.com
+doh.familyshield.opendns.com
+dns.nextdns.io
+doh.cleanbrowsing.org
+doh.mullvad.net
+dns.mullvad.net
+dns.adguard.com
+dns.adguard-dns.com
+unfiltered.adguard-dns.com
+family.adguard-dns.com
+doh.dns.sb
+dns.twnic.tw
+doh.xfinity.com
+dns.alidns.com
+doh.pub
+doh.360.cn
+dns.controld.com
+freedns.controld.com
+dns0.eu
